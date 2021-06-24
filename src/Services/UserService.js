@@ -6,16 +6,16 @@ export const UserService = {
     getAll
 };
 
-const requestUrl = "http://localhost:5000";
+const requestUrl = "https://localhost:5001";
 
-function login(username, password) {
+function login(login, password) {
     const requestOptions = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ login, password })
     };
 
-    return fetch(`${requestUrl}/users/authenticate`, requestOptions)
+    return fetch(`${requestUrl}/accounts/authenticate`, requestOptions)
         .then(handleResponse)
         .then(user => {
             // store user details and jwt token in local storage to keep user logged in between page refreshes
@@ -46,6 +46,7 @@ function handleResponse(response) {
             if (response.status === 401) {
                 // auto logout if 401 response returned from api
                 logout();
+                window.location.replace("/");
             }
 
             const error = (data && data.message) || response.statusText;

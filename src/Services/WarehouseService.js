@@ -1,4 +1,7 @@
-const requestUrl = "http://localhost:5000";
+import { UserService } from "./UserService";
+import { authHeader } from '../_helpers';
+const requestUrl = "https://localhost:5001";
+
 export const WarehouseService = {
   GetStocks,
   GetBatches,
@@ -6,32 +9,35 @@ export const WarehouseService = {
   CreateStock,
   GetStockNames,
   CreateBatch,
-  ConfirmBatch
+  ConfirmBatch,
 };
 
-function ConfirmBatch(batchId, bestBefore){
-    const requestOptions = {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            batchId,
-            bestBefore
-        }),
-      };
-      return fetch(`${requestUrl}/warehouse/batch/confirm`, requestOptions)
-        .then(handleResponse)
-        .then(
-          (message) => message,
-          (error) => error
-        );
+function ConfirmBatch(batchId, bestBefore) {
+  const headers = new Headers(authHeader());
+  headers.append("Content-Type", "application/json");
+  const requestOptions = {
+    method: "PATCH",
+    headers: headers,
+    body: JSON.stringify({
+      batchId,
+      bestBefore,
+    }),
+  };
+  return fetch(`${requestUrl}/warehouse/batch/confirm`, requestOptions)
+  .then(handleResponse)
+  .then((data) => {
+    return data;
+  });
 }
 
-function GetStocks() {
+function GetStocks(skip, limit, status, search) {
+  const headers = new Headers(authHeader());
   const requestOptions = {
     method: "GET",
+    headers: headers,
   };
   return fetch(
-    `${requestUrl}/warehouse/stock?departmentId=8bcfaed8-e453-4e85-88c5-212b103e5516&skip=0&limit=10`,
+    `${requestUrl}/warehouse/stock?skip=${skip}&limit=${limit}&status=${status}&search=${search}`,
     requestOptions
   )
     .then(handleResponse)
@@ -41,8 +47,10 @@ function GetStocks() {
 }
 
 function SearchProductList(search) {
+  const headers = new Headers(authHeader());
   const requestOptions = {
     method: "GET",
+    headers: headers,
   };
   return fetch(
     `${requestUrl}/warehouse/products?search=${search}`,
@@ -62,9 +70,11 @@ function CreateStock(
   orderpoint,
   orderperiod
 ) {
+  const headers = new Headers(authHeader());
+  headers.append("Content-Type", "application/json");
   const requestOptions = {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers,
     body: JSON.stringify({
       productid,
       maxcount,
@@ -75,31 +85,34 @@ function CreateStock(
     }),
   };
   return fetch(`${requestUrl}/warehouse/stock/create`, requestOptions)
-    .then(handleResponse)
-    .then(
-      (message) => message,
-      (error) => error
-    );
+  .then(handleResponse)
+  .then((data) => {
+    return data;
+  });
 }
 
 function GetStockNames(search) {
+  const headers = new Headers(authHeader());
   const requestOptions = {
     method: "GET",
+    headers: headers,
   };
   return fetch(
     `${requestUrl}/warehouse/stock/names?search=${search}`,
     requestOptions
   )
-    .then(handleResponse)
-    .then((data) => {
-      return data;
-    });
+  .then(handleResponse)
+  .then((data) => {
+    return data;
+  });
 }
 
 function CreateBatch(stockId, providername, count) {
+  const headers = new Headers(authHeader());
+  headers.append("Content-Type", "application/json");
   const requestOptions = {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers,
     body: JSON.stringify({
       stockId,
       providername,
@@ -107,36 +120,37 @@ function CreateBatch(stockId, providername, count) {
     }),
   };
   return fetch(`${requestUrl}/warehouse/batch/create`, requestOptions)
-    .then(handleResponse)
-    .then(
-      (message) => message,
-      (error) => error
-    );
+  .then(handleResponse)
+  .then((data) => {
+    return data;
+  });
 }
 
-function GetBatches() {
+function GetBatches(skip, limit, status, search) {
+  const headers = new Headers(authHeader());
   const requestOptions = {
     method: "GET",
+    headers: headers,
   };
   return fetch(
-    `${requestUrl}/warehouse/batches?departmentId=8bcfaed8-e453-4e85-88c5-212b103e5516&skip=0&limit=10`,
+    `${requestUrl}/warehouse/batches?skip=${skip}&limit=${limit}&status=${status}&search=${search}`,
     requestOptions
   )
-    .then(handleResponse)
-    .then((data) => {
-      return data;
-    });
+  .then(handleResponse)
+  .then((data) => {
+    return data;
+  });
 }
 
 function handleResponse(response) {
   return response.text().then((text) => {
     const data = text && JSON.parse(text);
     if (!response.ok) {
-      // if (response.status === 401) {
-      //     // auto logout if 401 response returned from api
-      //     logout();
-      //     location.reload(true);
-      // }
+      if (response.status === 401) {
+        // auto logout if 401 response returned from api
+        UserService.logout();
+        window.location.replace("/");
+      }
 
       const error = (data && data.message) || response.statusText;
       return Promise.reject(error);

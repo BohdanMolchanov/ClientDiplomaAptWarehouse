@@ -5,6 +5,7 @@ import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import AsyncSelect from "react-select/async";
 import { WarehouseService } from "../../../Services/WarehouseService";
+import { ClientService } from "../../../Services/ClientService";
 class CreateStock extends Component {
   constructor(props) {
     super();
@@ -18,10 +19,18 @@ class CreateStock extends Component {
       selectedProductValue: "",
       responseSuccess: "",
       responseError: "",
+      submitted: "",
+      departmentInfo: ""
     };
     this.handleProductSelectChange = this.handleProductSelectChange.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.createProductRequest = this.createProductRequest.bind(this);
+  }
+
+  componentWillMount() {
+    ClientService.getAuthorizedDepartmentInformation().then((result) => {
+      this.setState({ departmentInfo: result });
+    });
   }
 
   handleChange(e) {
@@ -40,9 +49,7 @@ class CreateStock extends Component {
 
   loadOptions = (inputValue) => {
     console.log(inputValue);
-    if (inputValue.length > 2) {
-      return WarehouseService.SearchProductList(inputValue);
-    }
+    return WarehouseService.SearchProductList(inputValue);
   };
 
   handleInputChange = (value) => {
@@ -60,6 +67,16 @@ class CreateStock extends Component {
 
   createProductRequest(e) {
     e.preventDefault();
+    this.setState({
+      responseError:'',
+      responseSuccess: ''
+    });
+    const form = e.currentTarget;
+    if (form.checkValidity() === false) {
+      e.stopPropagation();
+      this.setState({ submitted: true });
+      return;
+    }
     const {
       productId,
       maxcount,
@@ -81,8 +98,14 @@ class CreateStock extends Component {
       orderpoint,
       orderperiod
     ).then(
-      (result) => this.setState({ responseSuccess: "Сутність запасу була успішно додана до системи." }),
-      (error) => this.setState({ responseError: `Виникла помилка під час відправки запиту. ${error}`})
+      (result) =>
+        this.setState({
+          responseSuccess: "Сутність запасів була успішно створена",
+        }),
+      (error) =>
+        this.setState({
+          responseError: `Виникла помилка під час відправки запиту. ${error}`,
+        })
     );
   }
 
@@ -96,13 +119,19 @@ class CreateStock extends Component {
       orderpoint,
       responseError,
       responseSuccess,
+      submitted,
+      departmentInfo
     } = this.state;
     return (
-      <Form>
+      <Form
+        noValidate
+        validated={submitted}
+        onSubmit={this.createProductRequest}
+      >
         {responseError && (
-            <div class="alert alert-danger" role="alert">
-              {responseError}
-            </div>
+          <div class="alert alert-danger" role="alert">
+            {responseError}
+          </div>
         )}
         {responseSuccess && (
           <div class="alert alert-success" role="alert">
@@ -131,6 +160,7 @@ class CreateStock extends Component {
               placeholder="Введіть ціну, за якою повинен закупатися товар"
               className="border border-info"
               onChange={this.handleChange}
+              required
             />
           </Form.Group>
 
@@ -143,19 +173,20 @@ class CreateStock extends Component {
               placeholder="Введіть ціну, за якою повинен продаватися товар"
               className="border border-info"
               onChange={this.handleChange}
+              required
             />
           </Form.Group>
         </Form.Row>
 
         <Form.Group controlId="formGridAddress2">
           <Form.Label>Модель системи управління запасом:</Form.Label>
-          <Form.Control as="select" custom className="border border-warning">
+          <Form.Control as="select" custom className="border border-warning" disabled>
             <option>
               Із заданою періодичністю поповнення запасів до встановленого рівню
               (рекомендовано)
             </option>
-            <option>З фіксованим розміром замовлення</option>
-            <option>Система періодичного замовлення</option>
+            {/* <option>З фіксованим розміром замовлення</option>
+            <option>Система періодичного замовлення</option> */}
           </Form.Control>
         </Form.Group>
 
@@ -168,6 +199,7 @@ class CreateStock extends Component {
               name="maxcount"
               value={maxcount}
               onChange={this.handleChange}
+              required
             />
           </Form.Group>
 
@@ -179,6 +211,7 @@ class CreateStock extends Component {
               name="orderperiod"
               value={orderperiod}
               onChange={this.handleChange}
+              required
             />
           </Form.Group>
 
@@ -190,52 +223,68 @@ class CreateStock extends Component {
               value={orderpoint}
               className="border border-info"
               onChange={this.handleChange}
+              required
             />
           </Form.Group>
         </Form.Row>
 
-        <Form.Group as={Row} controlId="formPlaintextEmail" className="mb-0">
-          <Form.Label column sm="2">
-            Організація
-          </Form.Label>
-          <Col sm="10">
-            <Form.Control
-              plaintext
-              readOnly
-              defaultValue="Аптека Доброго Дня"
-            />
-          </Col>
-        </Form.Group>
-        <Form.Group as={Row} controlId="formPlaintextEmail" className="mb-0">
-          <Form.Label column sm="2">
-            Відділення
-          </Form.Label>
-          <Col sm="10">
-            <Form.Control plaintext readOnly defaultValue="Відділення №15" />
-          </Col>
-        </Form.Group>
+        {departmentInfo && (
+          <>
+            <Form.Group
+              as={Row}
+              controlId="formPlaintextEmail"
+              className="mb-0"
+            >
+              <Form.Label column sm="2">
+                Організація
+              </Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  plaintext
+                  readOnly
+                  defaultValue={departmentInfo.organization.name}
+                />
+              </Col>
+            </Form.Group>
+            <Form.Group
+              as={Row}
+              controlId="formPlaintextEmail"
+              className="mb-0"
+            >
+              <Form.Label column sm="2">
+                Відділення
+              </Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  plaintext
+                  readOnly
+                  defaultValue={departmentInfo.name}
+                />
+              </Col>
+            </Form.Group>
 
-        <Form.Group as={Row} controlId="formPlaintextEmail">
-          <Form.Label column sm="2">
-            Адреса
-          </Form.Label>
-          <Col sm="10">
-            <Form.Control
-              plaintext
-              readOnly
-              defaultValue="Кагарлик, Комунарська 45"
-            />
-          </Col>
-        </Form.Group>
+            <Form.Group as={Row} controlId="formPlaintextEmail">
+              <Form.Label column sm="2">
+                Адреса
+              </Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  plaintext
+                  readOnly
+                  defaultValue={`${departmentInfo.addressText}`}
+                />
+              </Col>
+            </Form.Group>
+          </>
+        )}
 
         <Form.Group id="formGridCheckbox">
-          <Form.Check type="checkbox" label="Дані для відправки перевірено" />
+          <Form.Check type="checkbox" label="Дані для відправки перевірено" required/>
         </Form.Group>
 
         <Button
           variant="success"
           type="submit"
-          onClick={this.createProductRequest}
         >
           Створити запис про запаси
         </Button>

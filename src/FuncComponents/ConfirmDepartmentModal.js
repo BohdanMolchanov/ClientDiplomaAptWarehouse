@@ -1,35 +1,38 @@
 import { Button, Col, Form, Modal } from "react-bootstrap";
-import {useState, useEffect} from "react";
+import { useState } from "react";
 import { WarehouseService } from "../Services/WarehouseService";
+import { AdminService } from "../Services/AdminService";
 import { Redirect } from "react-router";
 
-function ConfirmBatchModal(props) {
+function ConfirmDepartmentModal(props) {
   const [show, setShow] = useState(false);
   const [date, setDate] = useState(null);
-  
+
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
 
-const approve = () => {
+  const approve = () => {
     handleClose();
     props.confirmHandler();
-}
+  };
   return (
     <>
       <a href="#" className="text-primary" onClick={handleShow}>
-      Підтвердити отримання 
+        Підтвердити
       </a>
       <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
-          <Modal.Title>Modal heading</Modal.Title>
+          <Modal.Title>Конфірмація відділення</Modal.Title>
         </Modal.Header>
-        <Modal.Body>Підтверджуєте отримання запасів {props.name} у кількості {props.count} шт.?</Modal.Body>
+        <Modal.Body>
+          Ви підтверджуєте створення відділення {props.name} за адресою {props.addressText}?
+        </Modal.Body>
         <Modal.Footer>
           <Button variant="danger" onClick={handleClose}>
-            Скасувати
+            Ні
           </Button>
           <Button variant="success" onClick={approve}>
-            Підтвердити отримання
+            Так
           </Button>
         </Modal.Footer>
       </Modal>
@@ -37,4 +40,4 @@ const approve = () => {
   );
 }
 
-export default ConfirmBatchModal;
+export default ConfirmDepartmentModal;

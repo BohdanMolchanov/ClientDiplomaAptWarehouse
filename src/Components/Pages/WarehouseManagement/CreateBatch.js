@@ -5,15 +5,19 @@ import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import AsyncSelect from "react-select/async";
 import { WarehouseService } from "../../../Services/WarehouseService";
+import { ClientService } from "../../../Services/ClientService";
 class CreateBatch extends Component {
   constructor(props) {
     super();
     this.state = {
       stockId: null,
-      providername:"", count:"",
+      providername: "",
+      count: "",
       selectedStockValue: "",
       responseSuccess: "",
       responseError: "",
+      submitted: "",
+      departmentInfo: null,
     };
     this.handleProductSelectChange = this.handleProductSelectChange.bind(this);
     this.handleChange = this.handleChange.bind(this);
@@ -26,11 +30,15 @@ class CreateBatch extends Component {
     this.setState({ [name]: value });
   }
   handleProductSelectChange(e) {
-    console.log(e.stockId);
-    console.log("aaaaa");
     this.setState({
       stockId: e.stockId,
       selectedStockValue: e,
+    });
+  }
+
+  componentWillMount() {
+    ClientService.getAuthorizedDepartmentInformation().then((result) => {
+      this.setState({ departmentInfo: result });
     });
   }
 
@@ -56,6 +64,16 @@ class CreateBatch extends Component {
 
   createProductRequest(e) {
     e.preventDefault();
+    this.setState({
+      responseError: "",
+      responseSuccess: "",
+    });
+    const form = e.currentTarget;
+    if (form.checkValidity() === false) {
+      e.stopPropagation();
+      this.setState({ submitted: true });
+      return;
+    }
     const { stockId, providername, count, responseError, responseSuccess } =
       this.state;
     console.log("stockId");
@@ -64,7 +82,7 @@ class CreateBatch extends Component {
     WarehouseService.CreateBatch(stockId, providername, count).then(
       (result) =>
         this.setState({
-          responseSuccess: "Заявка на поповнення була успішно створена.",
+          responseSuccess: "Заявка на отримання запасів була успішно створена",
         }),
       (error) =>
         this.setState({
@@ -80,9 +98,15 @@ class CreateBatch extends Component {
       count,
       responseError,
       responseSuccess,
+      submitted,
+      departmentInfo,
     } = this.state;
     return (
-      <Form>
+      <Form
+        noValidate
+        validated={submitted}
+        onSubmit={this.createProductRequest}
+      >
         {responseError && (
           <div class="alert alert-danger" role="alert">
             {responseError}
@@ -115,67 +139,83 @@ class CreateBatch extends Component {
               placeholder="Назва фірми-постачальника"
               className="border border-info"
               onChange={this.handleChange}
+              required
             />
           </Form.Group>
 
-          <Form.Group as={Col} controlId="formGridPassword">
-            <Form.Label>
-              Введіть точну кількість одиниць медичних засобів для замовлення
-            </Form.Label>
+          <Form.Group as={Col}>
+            <Form.Label>Введіть точну кількість замовлення</Form.Label>
             <Form.Control
-              type="number"
+              type="text"
               name="count"
               value={count}
               placeholder="Кількість препаратів"
               className="border border-info"
               onChange={this.handleChange}
+              required
             />
           </Form.Group>
         </Form.Row>
 
-        <Form.Group as={Row} controlId="formPlaintextEmail" className="mb-0">
-          <Form.Label column sm="2">
-            Організація
-          </Form.Label>
-          <Col sm="10">
-            <Form.Control
-              plaintext
-              readOnly
-              defaultValue="Аптека Доброго Дня"
-            />
-          </Col>
-        </Form.Group>
-        <Form.Group as={Row} controlId="formPlaintextEmail" className="mb-0">
-          <Form.Label column sm="2">
-            Відділення
-          </Form.Label>
-          <Col sm="10">
-            <Form.Control plaintext readOnly defaultValue="Відділення №15" />
-          </Col>
-        </Form.Group>
+        {departmentInfo && (
+          <>
+            <Form.Group
+              as={Row}
+              controlId="formPlaintextEmail"
+              className="mb-0"
+            >
+              <Form.Label column sm="2">
+                Організація
+              </Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  plaintext
+                  readOnly
+                  defaultValue={departmentInfo.organization.name}
+                />
+              </Col>
+            </Form.Group>
+            <Form.Group
+              as={Row}
+              controlId="formPlaintextEmail"
+              className="mb-0"
+            >
+              <Form.Label column sm="2">
+                Відділення
+              </Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  plaintext
+                  readOnly
+                  defaultValue={departmentInfo.name}
+                />
+              </Col>
+            </Form.Group>
 
-        <Form.Group as={Row} controlId="formPlaintextEmail">
-          <Form.Label column sm="2">
-            Адреса
-          </Form.Label>
-          <Col sm="10">
-            <Form.Control
-              plaintext
-              readOnly
-              defaultValue="Кагарлик, Комунарська 45"
-            />
-          </Col>
-        </Form.Group>
+            <Form.Group as={Row} controlId="formPlaintextEmail">
+              <Form.Label column sm="2">
+                Адреса
+              </Form.Label>
+              <Col sm="10">
+                <Form.Control
+                  plaintext
+                  readOnly
+                  defaultValue={`${departmentInfo.addressText}`}
+                />
+              </Col>
+            </Form.Group>
+          </>
+        )}
 
         <Form.Group id="formGridCheckbox">
-          <Form.Check type="checkbox" label="Дані для відправки перевірено" />
+          <Form.Check
+            type="checkbox"
+            label="Дані для відправки перевірено"
+            required
+          />
         </Form.Group>
 
-        <Button
-          variant="success"
-          type="submit"
-          onClick={this.createProductRequest}
-        >
+        <Button variant="success" type="submit">
           Створити запис про запаси
         </Button>
       </Form>
